@@ -1,0 +1,15 @@
+Duration: 23.61s, Total samples = 138.94s (588.39%)
+Showing nodes accounting for 125.54s, 90.36% of 138.94s total
+Dropped 461 nodes (cum <= 0.69s)
+Showing top 10 nodes out of 100
+      flat  flat%   sum%        cum   cum%
+   113.19s 81.47% 81.47%    113.67s 81.81%  runtime.cgocall
+     2.69s  1.94% 83.40%      2.94s  2.12%  encoding/json.appendString[go.shape.string]
+     2.63s  1.89% 85.30%      2.63s  1.89%  runtime.memmove
+     1.64s  1.18% 86.48%      1.65s  1.19%  runtime.stdcall0
+     1.30s  0.94% 87.41%      1.30s  0.94%  runtime.memclrNoHeapPointers
+     1.21s  0.87% 88.28%      1.46s  1.05%  strings.TrimRight
+     1.06s  0.76% 89.05%      4.48s  3.22%  runtime.mallocgc
+     0.81s  0.58% 89.63%      0.81s  0.58%  runtime.stdcall2
+     0.69s   0.5% 90.13%      0.73s  0.53%  runtime.findObject
+     0.32s  0.23% 90.36%    118.94s 85.61%  main.parseEmail

@@ -1,0 +1,13 @@
+Showing nodes accounting for 2, 100% of 2 total
+Showing top 10 nodes out of 11
+      flat  flat%   sum%        cum   cum%
+         1 50.00% 50.00%          1 50.00%  runtime.goroutineProfileWithLabels
+         1 50.00%   100%          1 50.00%  runtime.notetsleepg
+         0     0%   100%          1 50.00%  main.main
+         0     0%   100%          1 50.00%  runtime.(*profBuf).read
+         0     0%   100%          1 50.00%  runtime.main
+         0     0%   100%          1 50.00%  runtime.pprof_goroutineProfileWithLabels
+         0     0%   100%          1 50.00%  runtime/pprof.(*Profile).WriteTo
+         0     0%   100%          1 50.00%  runtime/pprof.profileWriter
+         0     0%   100%          1 50.00%  runtime/pprof.readProfile
+         0     0%   100%          1 50.00%  runtime/pprof.writeGoroutine
