@@ -5,7 +5,8 @@ A través de varias iteraciones de prueba y ajuste, se identificaron áreas espe
 
 No se recolectaron datos de cada iteración, pero por ejemplo, en una de las iteraciones, se obtuvieron los siguientes perfiles:
 
-1. CPU
+1. **CPU**
+```bash
 Duration: 591.13s, Total samples = 1.32hrs (805.96%)
 Showing nodes accounting for 4675.30s, 98.13% of 4764.27s total
 Dropped 653 nodes (cum <= 23.82s)
@@ -21,12 +22,14 @@ Showing top 10 nodes out of 37
      0.28s 0.0059% 98.12%   4641.65s 97.43%  main.processFiles
      0.27s 0.0057% 98.13%   4675.96s 98.15%  runtime.syscall_syscalln
      0.26s 0.0055% 98.13%   4396.16s 92.27%  syscall.Open
+```
 
 Se observa que **runtime.cgocall** (llamadas a código C) es el proceso que más consume CPU. Así mismo, puede ser buena idea revisar la función **main.parseEmail** porque también consume mucha CPU.
 
 **syscall.CreateFile** y **syscall.Open** son llamadas al sistema para abrir y crear archivos. Su uso intensivo se explica porque son más de 517.000 archivos a procesar. **path/filepath.walk** realiza el recorrido de archivos/directorios. Una opción para optimizar este punto sería cambiar la estructura de archivos de enron_mail para que sea más simple y fácil de acceder.
 
-2. Goroutine
+2. **Goroutine**
+```bash
 Showing nodes accounting for 2, 100% of 2 total
       flat  flat%   sum%        cum   cum%
          1 50.00% 50.00%          1 50.00%  runtime.gopark
@@ -39,10 +42,12 @@ Showing nodes accounting for 2, 100% of 2 total
          0     0%   100%          1 50.00%  runtime/pprof.writeGoroutine
          0     0%   100%          1 50.00%  runtime/pprof.writeRuntimeProfile
          0     0%   100%          1 50.00%  time.Sleep
+```
 
 En este caso se recomienda revisar el manejo de goroutines y bloqueos (uso de canales, mutexes, etc.) para asegurarse de que las goroutines no están siendo bloqueadas innecesariamente.
 
-3. Memory
+3. **Memory**
+```bash
 Showing nodes accounting for 5.72MB, 100% of 5.72MB total
 Showing top 10 nodes out of 15
       flat  flat%   sum%        cum   cum%
@@ -56,6 +61,7 @@ Showing top 10 nodes out of 15
          0     0%   100%        4MB 69.92%  encoding/json.arrayEncoder.encode
          0     0%   100%        4MB 69.92%  encoding/json.sliceEncoder.encode
          0     0%   100%        4MB 69.92%  encoding/json.stringEncoder
+```
 
 **bytes.growSlice** es la función responsable de expandir los tamaños de los slices en Go. Esto puede indicar que la aplicación está haciendo un uso intensivo de slices, lo que lleva a la reasignación y expansión de memoria de manera frecuente. Esto concuerda con la manipulación de grandes cantidades de datos. Optimizar el uso de slices (por ejemplo, preasignando capacidad o utilizando otras estructuras de datos más adecuadas) podría reducir la carga de memoria.
 
@@ -81,7 +87,8 @@ Se realizaron los siguientes cambios para mejorar ese aspecto:
 
 Después de implementar estos cambios, se notó una mejora importante en el tiempo total de ejecución, pasando de +9 min a ~32 seg.
 
-1. CPU
+1. **CPU**
+```bash
 Duration: 31.95s, Total samples = 115.37s (361.08%)
 Showing nodes accounting for 103.71s, 89.89% of 115.37s total
 Dropped 451 nodes (cum <= 0.58s)
@@ -97,6 +104,7 @@ Showing top 10 nodes out of 114
      1.01s  0.88% 88.59%      1.01s  0.88%  runtime.stdcall2
      0.89s  0.77% 89.36%      0.97s  0.84%  runtime.findObject
      0.61s  0.53% 89.89%      0.61s  0.53%  runtime.nextFreeFast (inline)
+```
 
 Disminuyó el uso de **runtime.cgocall** (98.04% -> 78.30%), aunque sigue siendo un cuello de botella importante.
 
@@ -104,7 +112,8 @@ Aunque no se hizo ningún cambio en **main.parseEmail**, esta ya no aparece como
 
 Así mismo, **runtime.memmove** y **runtime.mallocgc** ahora aparecen como nodos significativos. Esto sugiere que el manejo de memoria es más visible tras las optimizaciones.
 
-2. Goroutine
+2. **Goroutine**
+```bash
 Showing nodes accounting for 2, 100% of 2 total
       flat  flat%   sum%        cum   cum%
          1 50.00% 50.00%          1 50.00%  runtime.gopark
@@ -117,10 +126,12 @@ Showing nodes accounting for 2, 100% of 2 total
          0     0%   100%          1 50.00%  runtime/pprof.writeGoroutine
          0     0%   100%          1 50.00%  runtime/pprof.writeRuntimeProfile
          0     0%   100%          1 50.00%  time.Sleep
+```
 
 Se se observan grandes cambios con respecto al perfil pasado.
 
-3. Memory
+3. **Memory**
+```bash
 Showing nodes accounting for 169.16MB, 99.40% of 170.17MB total
 Dropped 11 nodes (cum <= 0.85MB)
 Showing top 10 nodes out of 14
@@ -135,6 +146,7 @@ Showing top 10 nodes out of 14
          0     0% 99.40%      168MB 98.72%  encoding/json.arrayEncoder.encode
          0     0% 99.40%      168MB 98.72%  encoding/json.sliceEncoder.encode
          0     0% 99.40%      168MB 98.72%  encoding/json.stringEncoder
+```
 
 Aunque el tiempo de ejecución se redujo significativamente, el uso de memoria aumentó dramáticamente (5.72 MB -> 170.17 MB), debido a que se están usando más estructuras en memoria para optimizar el tiempo de CPU.
 
@@ -146,7 +158,8 @@ Con el procesamiento de datos en paralelo, podemos evaluar si el uso de buffers 
 
 En la última optimización, se inicializa el strings.Builder (bodyBuffer) con una capacidad inicial aproximada (4 KB) con el objetivo de disminuir el uso de **bytes.growSlice**. Al hacerlo, vemos una mejora en el uso de memoria de dicha función (168 MB -> 152 MB, aproximadamente un 10% menos).
 
-1. Memory
+1. **Memory**
+```bash
 Showing nodes accounting for 153.72MB, 98.99% of 155.29MB total
 Dropped 16 nodes (cum <= 0.78MB)
 Showing top 10 nodes out of 15
@@ -161,3 +174,4 @@ Showing top 10 nodes out of 15
          0     0% 98.99%      152MB 97.88%  encoding/json.arrayEncoder.encode
          0     0% 98.99%      152MB 97.88%  encoding/json.sliceEncoder.encode
          0     0% 98.99%      152MB 97.88%  encoding/json.stringEncoder
+```
